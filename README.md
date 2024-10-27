@@ -9,3 +9,4 @@ For the students who joined TrailClass without VSCode, please follow the steps h
 
 1. goto https://code.visualstudio.com/download. Please choose the right link for your operating system, hardware configration, and installation method you are familiar with. If you have any questions, you may Google the answer or contact the class owner. 
 
+![Download VSCode](images/VSCode-Download.png)
