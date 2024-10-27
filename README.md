@@ -1,9 +1,9 @@
 # Todolist-TrialClass
-The X Hackathon Trial Class Project: to-do list
+This is the X School's X Hackathon Trial Class Project: to-do list.
 
-The project is separated into frontend (client folder) and backend (server folder)
+The project is separated into frontend (client folder) and backend (server folder). 
 
-This project is inspired by Columbia University Hackathon project: https://github.com/adicu/devfest-workshops/tree/main 
+This project is inspired by Columbia University Hackathon project: https://github.com/adicu/devfest-workshops/tree/main. Please refer https://react.dev/learn, https://create-react-app.dev/ for more tutorial of React development.
 
 For the students who joined TrailClass without VSCode, please follow the steps here:
 
