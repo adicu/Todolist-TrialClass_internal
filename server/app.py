@@ -1,5 +1,10 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import Optional
 import todo
+
+class Item(BaseModel):
+    name: str
 
 app = FastAPI()
 
@@ -14,8 +19,14 @@ async def createTask(id, name, desc, priority, status, compDate, createDate, par
         "completionDate": compDate,
         "creationDate": createDate,
         "parentID": parentID})
-    return todo.db.collection.find({"taskID":{"$eq":id}})
+    document = todo.db.Tasks.find_one({"taskID": id})
+    if document:
+        document["_id"] = str(document["_id"])
+    return document
 
 @app.get("/task/read")
-async def readTask(id):
-    return todo.db.collection.find({"taskID":{"$eq":id}})
+async def readTask(id: int):
+    document = todo.db.Tasks.find_one({"taskID": id})
+    if document:
+        document["_id"] = str(document["_id"])
+    return document
