@@ -2,11 +2,12 @@ from pymongo import MongoClient
 
 client = MongoClient("mongodb://127.0.0.1:27017")
 
-db = client['tasks']
+db = client['To-do']
 
-Personal = db["Personal"]
+tasks = db["Tasks"]
+lists = db["Lists"]
 
-db.Personal.insert_one({
+db.Tasks.insert_one({
     "taskID": 1, 
     "taskName": "testName", 
     "taskDescription": "testDesc", 
@@ -14,7 +15,13 @@ db.Personal.insert_one({
     "taskStatus": False,
     "completionDate": "2024-10-31",
     "creationDate": "2024-10-27",
-    "parentID": 2,})
+    "parentID": 2})
+
+db.Lists.insert_one({
+    "listID": 1, 
+    "listName": "list1", 
+    "listDescription": "tempDescrip",
+    "creationDate": "2024-10-27"})
 
 collection_list = db.list_collections()
 for c in collection_list:
