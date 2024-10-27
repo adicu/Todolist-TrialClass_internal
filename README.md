@@ -18,3 +18,7 @@ Step 2. Open the Todolist-TrialClass Github respository with VSCode:
 ![Open Github Repsoitory](images/VSCode-Open-Github-Repository.png)
 
 Please choose "Clone Git Repository", and use the line: https://github.com/CharleyGuo/Todolist-TrialClass.git You will be asked to choose a local folder in the next page. Please create a new folder "X School" if you haven't done so.
+
+Step 3. Open a terminal in VSCode:
+
+![New a Termianl](images/VSCode-New-Terminal.png)
