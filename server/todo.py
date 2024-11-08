@@ -15,7 +15,7 @@ db.Tasks.insert_one({
     "taskStatus": False,
     "completionDate": "2024-10-31",
     "creationDate": "2024-10-27",
-    "parentID": 2})
+    "parentID": 1})
 
 db.Lists.insert_one({
     "listID": 1, 
@@ -26,4 +26,5 @@ db.Lists.insert_one({
 collection_list = db.list_collections()
 for c in collection_list:
     print(c)
+    
 
