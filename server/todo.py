@@ -23,8 +23,8 @@ db.Lists.insert_one({
     "listDescription": "tempDescrip",
     "creationDate": "2024-10-27"})
 
-collection_list = db.list_collections()
-for c in collection_list:
-    print(c)
+# collection_list = db.list_collections()
+# for c in collection_list:
+#     print(c)
     
 
