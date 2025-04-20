@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 
-client = MongoClient("mongodb://127.0.0.1:27017")
+connection_string = "mongodb+srv://user:qwertyuiop@cluster0.ypdasjk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+client = MongoClient(connection_string, tlsAllowInvalidCertificates=True)
 
 db = client['To-do']
 
