@@ -1,11 +1,14 @@
-from fastapi import FastAPI, Request, HTTPException
-
-from pydantic import BaseModel
-from typing import Optional
-import todo
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import todo  # your module where `db = MongoClient(...)[...]`
 
-
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], allow_credentials=True,
+    allow_methods=["*"], allow_headers=["*"],
+)
 
 class Task(BaseModel):
     taskID: int
@@ -17,167 +20,89 @@ class Task(BaseModel):
     creationDate: str
     parentID: int
 
-
 class ListModel(BaseModel):
     listID: int
     listName: str
     listDescription: str
     creationDate: str
 
-class Item(BaseModel):
-    name: str
-
-app = FastAPI()
-origins = ["*"]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 @app.get("/")
 async def read_root():
     return {"message": "Hello, World!"}
 
-@app.delete("/task/deleteall")
-async def deleteTask():
-    todo.db.Tasks.delete_many({})
+@app.delete("/tasks")
+async def delete_all_tasks():
+    result = todo.db.Tasks.delete_many({})
+    return {"deleted_count": result.deleted_count}
 
-
-# Keep this commented out code if useful, otherwise remove. 
-# async def createTask(request: Request):
-#     req_json = request.json()
-#     print(req_json)
-#     todo.db.Tasks.insert_one(req_json)
-#     return todo.db.collection.find_one({"taskID":{"$eq":id}})
-# 
-# @app.get("/task/read")
-# async def readTask(id):
-#     return todo.db.collection.find_one({"taskID":{"$eq":id}})
-
-@app.get("/task/read_sample")
-async def readTaskSample(id):
-    return {
-    "taskID": id, 
-    "taskName": "Sample Task Name", 
-    "taskDescription": "Sample Task Description", 
-    "taskPriority": 1, 
-    "taskStatus": False,
-    "completionDate": "2024-10-31",
-    "creationDate": "2024-10-27",
-    "parentID": 1
-    }
-
-@app.post("/task/create")
-async def createTask(id, name, desc, priority, status, compDate, createDate, parentID):
-    todo.db.Tasks.insert_one({
-        "taskID": id, 
-        "taskName": name, 
-        "taskDescription": desc, 
-        "taskPriority": priority, 
-        "taskStatus": status,
-        "completionDate": compDate,
-        "creationDate": createDate,
-        "parentID": parentID})
-    document = todo.db.Tasks.find_one({"taskID": id})
-    if document:
-        document["_id"] = str(document["_id"])
-    return document
-
-@app.get("/task/read")
-async def readTask(id: int):
-    document = todo.db.Tasks.find_one({"taskID": id})
-    if document:
-        document["_id"] = str(document["_id"])
-    return document
-
-'''get all tasks'''
-@app.get("/tasks")
-def get_tasks():
-    tasks = []
+@app.get("/tasks", response_model=list[Task])
+async def get_tasks():
+    docs = []
     for doc in todo.db.Tasks.find():
         doc["_id"] = str(doc["_id"])
-        tasks.append(doc)
-    return tasks
+        docs.append(doc)
+    return docs
 
-'''get task by id?'''
-@app.get("/tasks/{task_id}")
-def get_task(task_id: int):
+@app.get("/tasks/{task_id}", response_model=Task)
+async def get_task(task_id: int):
     doc = todo.db.Tasks.find_one({"taskID": task_id})
     if not doc:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(404, "Task not found")
     doc["_id"] = str(doc["_id"])
     return doc
 
-'''create task'''
-@app.post("/tasks", status_code=201)
-def create_task(task: Task):
-    result = todo.db.Tasks.insert_one(task.dict())
-    new_task = todo.db.Tasks.find_one({"_id": result.inserted_id})
-    new_task["_id"] = str(new_task["_id"])
-    return new_task
+@app.post("/tasks", status_code=201, response_model=Task)
+async def create_task(task: Task):
+    todo.db.Tasks.insert_one(task.dict())
+    return task
 
-#update
-@app.put("/tasks/{task_id}")
-def update_task(task_id: int, task: Task):
-    update_result = todo.db.Tasks.update_one({"taskID": task_id}, {"$set": task.dict()})
-    if update_result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Task not found")
-    updated_task = todo.db.Tasks.find_one({"taskID": task_id})
-    updated_task["_id"] = str(updated_task["_id"])
-    return updated_task
+@app.put("/tasks/{task_id}", response_model=Task)
+async def update_task(task_id: int, task: Task):
+    res = todo.db.Tasks.update_one({"taskID": task_id}, {"$set": task.dict()})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Task not found")
+    return task
 
 @app.delete("/tasks/{task_id}")
-def delete_task(task_id: int):
-    """Delete a task by its taskID."""
-    delete_result = todo.db.Tasks.delete_one({"taskID": task_id})
-    if delete_result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return {"message": "Task deleted successfully"}
+async def delete_task(task_id: int):
+    res = todo.db.Tasks.delete_one({"taskID": task_id})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Task not found")
+    return {"message": "Task deleted"}
 
+# ---- Lists ----
 
-@app.get("/lists")
-def get_lists():
-    """Retrieve all lists."""
-    lists = []
-    for doc in todo.lists.find():
+@app.get("/lists", response_model=list[ListModel])
+async def get_lists():
+    docs = []
+    for doc in todo.db.Lists.find():
         doc["_id"] = str(doc["_id"])
-        lists.append(doc)
-    return lists
+        docs.append(doc)
+    return docs
 
-@app.get("/lists/{list_id}")
-def get_list(list_id: int):
-    """Retrieve a single list by its listID."""
-    doc = todo.lists.find_one({"listID": list_id})
+@app.get("/lists/{list_id}", response_model=ListModel)
+async def get_list(list_id: int):
+    doc = todo.db.Lists.find_one({"listID": list_id})
     if not doc:
-        raise HTTPException(status_code=404, detail="List not found")
+        raise HTTPException(404, "List not found")
     doc["_id"] = str(doc["_id"])
     return doc
 
-@app.post("/lists", status_code=201)
-def create_list(list_item: ListModel):
-    """Create a new list."""
-    result = todo.lists.insert_one(list_item.dict())
-    new_list = todo.lists.find_one({"_id": result.inserted_id})
-    new_list["_id"] = str(new_list["_id"])
-    return new_list
+@app.post("/lists", status_code=201, response_model=ListModel)
+async def create_list(list_item: ListModel):
+    todo.db.Lists.insert_one(list_item.dict())
+    return list_item
 
-@app.put("/lists/{list_id}")
-def update_list(list_id: int, list_item: ListModel):
-    """Update an existing list by its listID."""
-    update_result = todo.lists.update_one({"listID": list_id}, {"$set": list_item.dict()})
-    if update_result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="List not found")
-    updated_list = todo.lists.find_one({"listID": list_id})
-    updated_list["_id"] = str(updated_list["_id"])
-    return updated_list
+@app.put("/lists/{list_id}", response_model=ListModel)
+async def update_list(list_id: int, list_item: ListModel):
+    res = todo.db.Lists.update_one({"listID": list_id}, {"$set": list_item.dict()})
+    if res.matched_count == 0:
+        raise HTTPException(404, "List not found")
+    return list_item
 
 @app.delete("/lists/{list_id}")
-def delete_list(list_id: int):
-    """Delete a list by its listID."""
-    delete_result = todo.lists.delete_one({"listID": list_id})
-    if delete_result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="List not found")
-    return {"message": "List deleted successfully"}
+async def delete_list(list_id: int):
+    res = todo.db.Lists.delete_one({"listID": list_id})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "List not found")
+    return {"message": "List deleted"}
