@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import datetime
+import time
 import todo  # your module where `db = MongoClient(...)[...]`
 
 app = FastAPI()
@@ -11,20 +13,20 @@ app.add_middleware(
 )
 
 class Task(BaseModel):
-    taskID: int
+    taskID: int = 0
     taskName: str
-    taskDescription: str
-    taskPriority: int
-    taskStatus: bool
-    completionDate: str
-    creationDate: str
-    parentID: int
+    taskDescription: str = ""
+    taskPriority: int = 0
+    taskStatus: bool: False
+    completionDate: str = ""
+    creationDate: str = ""
+    listID: int = 0
 
 class ListModel(BaseModel):
-    listID: int
+    listID: int = 0
     listName: str
-    listDescription: str
-    creationDate: str
+    listDescription: str = ""
+    creationDate: str = ""
 
 @app.get("/")
 async def read_root():
@@ -51,10 +53,21 @@ async def get_task(task_id: int):
     doc["_id"] = str(doc["_id"])
     return doc
 
-@app.post("/tasks", status_code=201, response_model=Task)
+@app.post("/task/create")
 async def create_task(task: Task):
-    todo.db.Tasks.insert_one(task.dict())
-    return task
+    task_id = int(time.time() * 1000)
+    new_task = {
+        "taskID": task_id,
+        "taskName": task.name,
+        "taskDescription": task.desc,
+        "taskPriority": task.priority,
+        "taskStatus": False,
+        "completionDate": task.compDate,
+        "creationDate": str(datetime.date.today()),
+    }
+    print(new_task)
+    todo.db.Tasks.insert_one(new_task)
+    return str(new_task)
 
 @app.put("/tasks/{task_id}", response_model=Task)
 async def update_task(task_id: int, task: Task):
@@ -88,10 +101,16 @@ async def get_list(list_id: int):
     doc["_id"] = str(doc["_id"])
     return doc
 
-@app.post("/lists", status_code=201, response_model=ListModel)
+@app.post("/list/create", status_code=201, response_model=ListModel)
 async def create_list(list_item: ListModel):
-    todo.db.Lists.insert_one(list_item.dict())
-    return list_item
+    new_list = {
+        "listID": int(time.time() * 1000),
+        "listName": list_item.listName,
+        "listDescription": "",
+        "creationDate": str(datetime.date.today()),
+    }
+    todo.db.Lists.insert_one(new_list)
+    return new_list
 
 @app.put("/lists/{list_id}", response_model=ListModel)
 async def update_list(list_id: int, list_item: ListModel):
@@ -102,7 +121,7 @@ async def update_list(list_id: int, list_item: ListModel):
 
 @app.delete("/lists/{list_id}")
 async def delete_list(list_id: int):
-    res = todo.db.Lists.delete_one({"listID": list_id})
+    res = todo.db.Lists.delete_many({"listID": list_id})
     if res.deleted_count == 0:
         raise HTTPException(404, "List not found")
     return {"message": "List deleted"}
