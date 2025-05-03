@@ -4,6 +4,12 @@ from pydantic import BaseModel
 import datetime
 import time
 import todo  # your module where `db = MongoClient(...)[...]`
+from openai import OpenAI
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = FastAPI()
 app.add_middleware(
@@ -27,6 +33,25 @@ class ListModel(BaseModel):
     listName: str
     listDescription: str = ""
     creationDate: str = ""
+
+def create_prompt(task_doc):
+    return f"""
+    You are a productivity assistant. Given the task below, generate a suggested plan of action with steps:
+    
+    Task: {task_doc['taskName']}
+    Description: {task_doc['taskDescription']}
+    
+    Plan:
+    """
+
+def get_plan_from_gpt(prompt):
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return response.choices[0].message.content
 
 @app.get("/")
 async def read_root():
@@ -82,6 +107,15 @@ async def delete_task(task_id: int):
     if res.deleted_count == 0:
         raise HTTPException(404, "Task not found")
     return {"message": "Task deleted"}
+
+@app.get("/tasks/{task_id}/plan")
+def generate_plan_for_task(task_id: int):
+    task = todo.db.Tasks.find_one({"taskID": task_id})
+    if not task:
+        raise HTTPException(404, detail="Task not found")
+    prompt = create_prompt(task)
+    plan = get_plan_from_gpt(prompt)
+    return {"task_id": task_id, "plan": plan}
 
 # ---- Lists ----
 
