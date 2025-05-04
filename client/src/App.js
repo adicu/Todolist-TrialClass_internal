@@ -22,8 +22,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<ListPage/>}/>
-        <Route path="/:activeListId" element={<ListPage />}/>
+        <Route path="/" element={<ListPage_v2/>}/>
+        <Route path="/:activeListId" element={<ListPage_v2 />}/>
         <Route path="*" element={<NoPage/>}/>
       </Routes>
     </Router>
